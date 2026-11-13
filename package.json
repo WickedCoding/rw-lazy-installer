@@ -4,6 +4,9 @@
     "main": "dist/index.js",
     "license": "MIT",
     "type": "module",
+    "engines": {
+        "node": "^20.19.0 || >=22.12.0"
+    },
     "scripts": {
         "dev": "tsx src/index.ts",
         "build": "tsc",
@@ -20,7 +23,8 @@
         "commander": "^8.2.0",
         "conf": "^10.0.3",
         "fast-xml-parser": "^4.5.0",
-        "simple-git": "^3.24.0"
+        "simple-git": "^3.24.0",
+        "smol-toml": "^1.9.1"
     },
     "devDependencies": {
         "@types/node": "^22.10.2",
@@ -34,5 +38,10 @@
     "bin": {
         "rw-lazy-installer": "dist/index.js",
         "rw-update-masterlist": "update-masterlist.js"
+    },
+    "volta": {
+        "node": "26.13.1",
+        "npm": "12.2.2",
+        "yarn": "1.22.22"
     }
 }

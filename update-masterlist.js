@@ -1,19 +1,55 @@
+#!/usr/bin/env node
 import { readFile, writeFile } from 'fs/promises'
-import https from 'https'
 import chalk from 'chalk'
 import { XMLParser } from 'fast-xml-parser'
+import { parse as parseToml } from 'smol-toml'
 
 const pkg = JSON.parse(await readFile(new URL('./package.json', import.meta.url)))
 const USER_AGENT = `${pkg.name}/${pkg.version} (RimWorld mod metadata fetcher)`
+const MODS_FILE = new URL('./mods.json', import.meta.url)
 
-async function importJson(file) {
-    return JSON.parse(await readFile(new URL(file, import.meta.url)))
+const MASTERLIST_PROJECT = 'AblativeAbsolute/libidinous_loader_providers'
+const MASTERLIST_FILE = 'providers.toml'
+const MASTERLIST_REF = 'v1'
+const SUPPORTED_MASTERLIST_VERSION = 1
+
+const REQUEST_TIMEOUT_MS = 5000
+const DEFAULT_RETRY_AFTER_SECONDS = 10
+const MAX_RETRY_WAIT_SECONDS = 60
+const MAX_DEFERRAL_ROUNDS = 3
+
+const DEFAULT_MAX_WAIT_SECONDS = 300
+
+const skipVersions = process.argv.includes('--skip-versions') || process.argv.includes('-s')
+const maxWaitSeconds = parseMaxWait(process.argv)
+
+/** Read `--max-wait <seconds>`: the longest a retry round may wait for one rate-limited host. */
+function parseMaxWait(argv) {
+    const index = argv.indexOf('--max-wait')
+    if (index < 0) return DEFAULT_MAX_WAIT_SECONDS
+    const value = Number(argv[index + 1])
+    if (!Number.isFinite(value) || value < 0) {
+        console.error(chalk.red`--max-wait needs a number of seconds, got "${argv[index + 1]}"`)
+        process.exit(1)
+    }
+    return value
 }
 
+// --- helpers -----------------------------------------------------------------
+
 function buildGitLabApiUrl(host, projectPath, filePath, ref) {
-    const encodedProject = encodeURIComponent(projectPath)
-    const encodedFile = encodeURIComponent(filePath)
-    return `https://${host}/api/v4/projects/${encodedProject}/repository/files/${encodedFile}/raw?ref=${ref}`
+    const project = encodeURIComponent(projectPath)
+    const file = encodeURIComponent(filePath)
+    return `https://${host}/api/v4/projects/${project}/repository/files/${file}/raw?ref=${encodeURIComponent(ref)}`
+}
+
+/** Normalise a git remote so `https://host/a/b.git`, `https://host/a/b` and `https://host/a/b/` compare equal. */
+function normalizeRemote(url) {
+    return url.trim().toLowerCase().replace(/\/+$/, '').replace(/\.git$/, '')
+}
+
+function titleCase(value) {
+    return value.replace(/[-_]/g, ' ').replace(/(^\w)|(\s+\w)/g, letter => letter.toUpperCase())
 }
 
 function sleep(ms) {
@@ -25,303 +61,435 @@ function parseRetryAfter(header) {
     const seconds = Number(header)
     if (!Number.isNaN(seconds)) return seconds
     const dateMs = Date.parse(header)
-    if (!Number.isNaN(dateMs)) {
-        return Math.max(0, Math.ceil((dateMs - Date.now()) / 1000))
-    }
+    if (!Number.isNaN(dateMs)) return Math.max(0, Math.ceil((dateMs - Date.now()) / 1000))
     return null
 }
 
-async function fetchModVersions(gitUrl, branch = null) {
-    const parser = new XMLParser()
-
-    // Convert git URL to raw file URL
-    let rawUrl = null
-    let fallbackUrl = null
-
-    if (gitUrl.includes('gitgud.io')) {
-        // GitGud (GitLab CE) — use API to bypass Cloudflare challenge
-        const projectPath = gitUrl.replace('.git', '').replace('https://gitgud.io/', '')
-        if (branch) {
-            rawUrl = buildGitLabApiUrl('gitgud.io', projectPath, 'About/About.xml', branch)
-        } else {
-            rawUrl = buildGitLabApiUrl('gitgud.io', projectPath, 'About/About.xml', 'master')
-            fallbackUrl = buildGitLabApiUrl('gitgud.io', projectPath, 'About/About.xml', 'main')
-        }
-    } else if (gitUrl.includes('github.com')) {
-        // GitHub pattern: https://github.com/{user}/{repo}.git
-        const urlParts = gitUrl.replace('.git', '').replace('https://github.com/', '').split('/')
-        if (branch) {
-            rawUrl = `https://raw.githubusercontent.com/${urlParts[0]}/${urlParts[1]}/${branch}/About/About.xml`
-        } else {
-            rawUrl = `https://raw.githubusercontent.com/${urlParts[0]}/${urlParts[1]}/master/About/About.xml`
-            fallbackUrl = `https://raw.githubusercontent.com/${urlParts[0]}/${urlParts[1]}/main/About/About.xml`
-        }
-    } else if (gitUrl.includes('gitlab.com')) {
-        // GitLab — use API for consistency and challenge-free access
-        const projectPath = gitUrl.replace('.git', '').replace('https://gitlab.com/', '')
-        if (branch) {
-            rawUrl = buildGitLabApiUrl('gitlab.com', projectPath, 'About/About.xml', branch)
-        } else {
-            rawUrl = buildGitLabApiUrl('gitlab.com', projectPath, 'About/About.xml', 'main')
-            fallbackUrl = buildGitLabApiUrl('gitlab.com', projectPath, 'About/About.xml', 'master')
-        }
-    }
-
-    if (!rawUrl) {
-        throw new Error(`Unsupported git hosting platform for URL: ${gitUrl}`)
-    }
-    
-    // Try to fetch the About.xml file
-    const tryFetch = (url) => {
-        return new Promise((resolve, reject) => {
-            let request
-            let isResolved = false
-            
-            const timeout = setTimeout(() => {
-                if (!isResolved) {
-                    isResolved = true
-                    if (request) {
-                        request.destroy()
-                    }
-                    reject(new Error('Request timeout (5s)'))
-                }
-            }, 5000) // 5 second timeout per request
-            
-            request = https.get(url, { headers: { 'User-Agent': USER_AGENT } }, (response) => {
-                clearTimeout(timeout)
-                
-                // Handle authentication errors and redirects
-                if (response.statusCode === 401 || response.statusCode === 403) {
-                    if (!isResolved) {
-                        isResolved = true
-                        reject(new Error(`Authentication required (${response.statusCode})`))
-                    }
-                    return
-                }
-                
-                // Handle redirects that might be login pages
-                if (response.statusCode >= 300 && response.statusCode < 400) {
-                    const redirectUrl = response.headers.location
-                    if (redirectUrl && (redirectUrl.includes('login') || redirectUrl.includes('signin') || redirectUrl.includes('sign_in') || redirectUrl.includes('auth'))) {
-                        if (!isResolved) {
-                            isResolved = true
-                            reject(new Error('Redirect to login page detected'))
-                        }
-                        return
-                    }
-                    if (!isResolved) {
-                        isResolved = true
-                        reject(new Error(`Unexpected redirect (${response.statusCode})`))
-                    }
-                    return
-                }
-                
-                if (response.statusCode === 429) {
-                    if (!isResolved) {
-                        isResolved = true
-                        const err = new Error(`HTTP 429`)
-                        err.code = 'RATE_LIMITED'
-                        err.retryAfter = parseRetryAfter(response.headers['retry-after'])
-                        reject(err)
-                    }
-                    return
-                }
-
-                if (response.statusCode !== 200) {
-                    if (!isResolved) {
-                        isResolved = true
-                        reject(new Error(`HTTP ${response.statusCode}`))
-                    }
-                    return
-                }
-                
-                let data = ''
-                response.on('data', chunk => data += chunk)
-                response.on('end', () => {
-                    if (!isResolved) {
-                        try {
-                            const aboutInfo = parser.parse(data)
-                            if (aboutInfo.ModMetaData && aboutInfo.ModMetaData.supportedVersions) {
-                                const versions = aboutInfo.ModMetaData.supportedVersions.li
-                                isResolved = true
-                                resolve(Array.isArray(versions) ? versions : [versions])
-                            } else {
-                                isResolved = true
-                                reject(new Error('No supportedVersions found in About.xml'))
-                            }
-                        } catch (err) {
-                            isResolved = true
-                            reject(new Error(`Failed to parse XML: ${err.message}`))
-                        }
-                    }
-                })
-                response.on('error', (err) => {
-                    clearTimeout(timeout)
-                    if (!isResolved) {
-                        isResolved = true
-                        reject(err)
-                    }
-                })
-            })
-            
-            request.on('error', (err) => {
-                clearTimeout(timeout)
-                if (!isResolved) {
-                    isResolved = true
-                    reject(err)
-                }
-            })
+/**
+ * Fetch a URL as text. Throws on non-200 responses, redirects (often login pages)
+ * and timeouts. A 429 throws an error with `code = 'RATE_LIMITED'` and `retryAfter`.
+ */
+async function fetchText(url) {
+    let response
+    try {
+        response = await fetch(url, {
+            headers: { 'User-Agent': USER_AGENT },
+            redirect: 'manual',
+            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         })
+    } catch (err) {
+        if (err.name === 'TimeoutError') throw new Error(`Request timeout (${REQUEST_TIMEOUT_MS / 1000}s)`)
+        throw err
     }
-    
-    const fetchWithRetry = async (url, retriesLeft = 1) => {
-        try {
-            return await tryFetch(url)
-        } catch (err) {
-            if (err.code === 'RATE_LIMITED' && retriesLeft > 0) {
-                const delaySeconds = err.retryAfter ?? 10
-                console.log(chalk.gray`  ⏸ Rate limited, sleeping ${delaySeconds}s before retry...`)
-                await sleep(delaySeconds * 1000)
-                return fetchWithRetry(url, retriesLeft - 1)
-            }
-            throw err
-        }
+
+    if (response.status === 401 || response.status === 403) {
+        throw new Error(`Authentication required (${response.status})`)
+    }
+    if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('location') ?? ''
+        if (/login|signin|sign_in|auth/.test(location)) throw new Error('Redirect to login page detected')
+        throw new Error(`Unexpected redirect (${response.status})`)
+    }
+    if (response.status === 429) {
+        const err = new Error('HTTP 429')
+        err.code = 'RATE_LIMITED'
+        err.retryAfter = parseRetryAfter(response.headers.get('retry-after'))
+        throw err
+    }
+    if (response.status !== 200) {
+        throw new Error(`HTTP ${response.status}`)
+    }
+    return response.text()
+}
+
+/** Hosts that asked us to back off longer than MAX_RETRY_WAIT_SECONDS, mapped to when the block ends (ms epoch). */
+const exhaustedHosts = new Map()
+
+function secondsUntil(timestampMs) {
+    return Math.max(0, Math.ceil((timestampMs - Date.now()) / 1000))
+}
+
+/** Error for a host that is blocked until `resumeAt`; callers can defer the work instead of failing it. */
+function hostExhaustedError(host, resumeAt) {
+    const err = new Error(`Rate limited by ${host}, retry in ${secondsUntil(resumeAt)}s`)
+    err.code = 'HOST_EXHAUSTED'
+    err.host = host
+    err.resumeAt = resumeAt
+    return err
+}
+
+async function fetchTextWithRetry(url, retriesLeft = 1) {
+    const host = new URL(url).hostname
+    const blockedUntil = exhaustedHosts.get(host)
+    if (blockedUntil !== undefined) {
+        if (blockedUntil > Date.now()) throw hostExhaustedError(host, blockedUntil)
+        exhaustedHosts.delete(host)
     }
 
     try {
-        return await fetchWithRetry(rawUrl)
+        return await fetchText(url)
     } catch (err) {
-        if (fallbackUrl) {
-            try {
-                return await fetchWithRetry(fallbackUrl)
-            } catch (fallbackErr) {
-                throw new Error(`Failed both branches: primary=${err.message}, fallback=${fallbackErr.message}`)
-            }
+        if (err.code !== 'RATE_LIMITED') throw err
+
+        const delaySeconds = err.retryAfter ?? DEFAULT_RETRY_AFTER_SECONDS
+        if (retriesLeft > 0 && delaySeconds <= MAX_RETRY_WAIT_SECONDS) {
+            console.log(chalk.gray`  ⏸ Rate limited, sleeping ${delaySeconds}s before retry...`)
+            await sleep(delaySeconds * 1000)
+            return fetchTextWithRetry(url, retriesLeft - 1)
         }
-        throw err
+
+        const resumeAt = Date.now() + delaySeconds * 1000
+        exhaustedHosts.set(host, resumeAt)
+        console.log(chalk.red`  ⛔ ${host} rate limit exhausted (retry after ${delaySeconds}s), deferring its requests`)
+        throw hostExhaustedError(host, resumeAt)
     }
 }
 
-/** @type {Array} */
-const rwModlist = await importJson('./mods.json')
-const masterlistUrl = buildGitLabApiUrl('gitgud.io', 'AblativeAbsolute/libidinous_loader_providers', 'providers.json', 'v0')
-const updateMasterlist = async (data) => {
-    let versionSuccessCount = 0
-    let versionFailCount = 0
-    const versionErrors = []
+// --- About.xml version lookup ------------------------------------------------
 
-    for (const [category, mods] of Object.entries(data.providers)) {
-        const modlist = Object.entries(mods)
+/**
+ * Build the candidate raw About.xml URLs for a git remote, in the order to try them.
+ * Without an explicit branch both `master` and `main` are tried.
+ */
+function aboutXmlUrls(gitUrl, branch) {
+    const url = new URL(gitUrl)
+    const projectPath = url.pathname.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\.git$/, '')
+    const host = url.hostname
 
-        console.log(chalk.yellow`Checking ${category}: ${Object.keys(mods).length} mods`)
-
-        for (const [mod, info] of modlist) {
-            if(info.type !== 'git') { continue; }
-
-            const matchedModIndex = rwModlist.findIndex(m => m.remote == info.url)
-            if(matchedModIndex >= 0) {
-                const matchedMod = rwModlist[matchedModIndex]
-                const updatedEntry = {
-                    ...matchedMod,
-                    name: matchedMod.name ?? info.name,
-                    label: matchedMod.label ?? info.name.replace(/[-_]/g, ' ').replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
-                    remark: matchedMod.remark || category.replace(/[-_]/g, ' ').replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
-                }
-
-                const changedEntry = updatedEntry.name !== matchedMod.name ||
-                                     updatedEntry.label !== matchedMod.label ||
-                                     updatedEntry.remark !== matchedMod.remark ||
-                                     updatedEntry.versions !== matchedMod.versions
-
-                rwModlist[matchedModIndex] = updatedEntry
-
-                console.info(changedEntry 
-                    ? chalk.yellow`\t${matchedMod.label} => ${info.name} updated`
-                    : chalk.white`\t${matchedMod.label} => ${info.name} unchanged`
-                )
-            } else {
-                rwModlist[rwModlist.length] = {
-                    name: mod,
-                    label: info.name.replace(/[-_]/g, ' ').replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
-                    remote: info.url,
-                    remark: category.replace(/[-_]/g, ' ').replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
-                }
-
-                console.info(chalk.green`\t${info.name} added`)
-            }
-        }
+    let build
+    let defaultRefs
+    if (host === 'gitgud.io' || host === 'gitlab.com') {
+        // GitLab API instead of /-/raw/ to avoid the Cloudflare challenge on gitgud.io
+        build = ref => buildGitLabApiUrl(host, projectPath, 'About/About.xml', ref)
+        defaultRefs = host === 'gitgud.io' ? ['master', 'main'] : ['main', 'master']
+    } else if (host === 'github.com') {
+        build = ref => `https://raw.githubusercontent.com/${projectPath}/${ref}/About/About.xml`
+        defaultRefs = ['master', 'main']
+    } else if (host === 'codeberg.org') {
+        build = ref => `https://codeberg.org/${projectPath}/raw/branch/${ref}/About/About.xml`
+        defaultRefs = ['main', 'master']
+    } else {
+        throw new Error(`Unsupported git hosting platform: ${host}`)
     }
 
-    // Fetch versions for all mods (unless skipped)
-    if (!skipVersions) {
-        console.log(chalk.cyan`\nFetching version information for ${rwModlist.length} mods...`)
-        console.log(chalk.gray`(Use --skip-versions or -s to skip this step for faster updates)\n`)
-        
-        for (let i = 0; i < rwModlist.length; i++) {
-            const mod = rwModlist[i]
-            
-            // Skip deprecated mods or those without remote URLs
-            if (mod.deprecated || !mod.remote) {
+    return (branch ? [branch] : defaultRefs).map(build)
+}
+
+function parseSupportedVersions(xml) {
+    let about
+    try {
+        about = new XMLParser().parse(xml)
+    } catch (err) {
+        throw new Error(`Failed to parse XML: ${err.message}`)
+    }
+    const versions = about?.ModMetaData?.supportedVersions?.li
+    if (versions === undefined) throw new Error('No supportedVersions found in About.xml')
+    return Array.isArray(versions) ? versions : [versions]
+}
+
+async function fetchModVersions(gitUrl, branch) {
+    const errors = []
+    for (const url of aboutXmlUrls(gitUrl, branch)) {
+        try {
+            return parseSupportedVersions(await fetchTextWithRetry(url))
+        } catch (err) {
+            // A blocked host fails every ref the same way; let the caller defer the whole mod
+            if (err.code === 'HOST_EXHAUSTED') throw err
+            errors.push(err.message)
+        }
+    }
+    throw new Error(errors.length > 1 ? `Failed all branches: ${errors.join(', ')}` : errors[0])
+}
+
+// --- masterlist merge --------------------------------------------------------
+
+async function downloadMasterlist() {
+    const url = buildGitLabApiUrl('gitgud.io', MASTERLIST_PROJECT, MASTERLIST_FILE, MASTERLIST_REF)
+    const masterlist = parseToml(await fetchTextWithRetry(url))
+
+    if (masterlist.version !== SUPPORTED_MASTERLIST_VERSION) {
+        console.warn(chalk.yellow`Masterlist version is ${masterlist.version}, this script expects ${SUPPORTED_MASTERLIST_VERSION}. Results may be wrong.`)
+    }
+    if (!masterlist.providers || typeof masterlist.providers !== 'object') {
+        throw new Error('Masterlist has no [providers] table')
+    }
+    return masterlist
+}
+
+/**
+ * Merge masterlist providers into the local registry, in place.
+ * - Only `type = "git"` providers are used; the installer cannot handle zip downloads.
+ * - Disabled providers are never added. Existing entries that upstream disabled are reported, not changed.
+ * - Existing entries keep their curated label, name and remark; only missing fields are filled in.
+ * - An upstream `branch` always overwrites the local one.
+ */
+function mergeProviders(registry, providers) {
+    const stats = { added: 0, updated: 0, unchanged: 0, skippedNonGit: 0, skippedDisabled: 0 }
+    const disabledUpstream = []
+
+    for (const [category, mods] of Object.entries(providers)) {
+        const entries = Object.entries(mods)
+        const categoryRemark = titleCase(category)
+        console.log(chalk.yellow`Checking ${category}: ${entries.length} mods`)
+
+        for (const [key, info] of entries) {
+            const displayName = info.display_name ?? info.name ?? key
+
+            if (info.type !== 'git') {
+                stats.skippedNonGit++
+                console.info(chalk.gray`\t${displayName} skipped (type ${info.type})`)
                 continue
             }
-            
-            try {
-                const versions = await fetchModVersions(mod.remote, mod.branch)
-                rwModlist[i] = {
-                    ...mod,
-                    supportedVersions: versions
-                }
-                versionSuccessCount++
-                console.log(chalk.green`✓ ${mod.label.padEnd(50)} ${chalk.yellow`[${versions.join(', ')}]`}`)
-            } catch (err) {
-                versionFailCount++
-                versionErrors.push({ mod: mod.label, error: err.message })
-                console.log(chalk.red`✗ ${mod.label.padEnd(50)} ${chalk.gray`(${err.message})`}`)
+            if (!info.url) {
+                console.warn(chalk.red`\t${displayName} skipped (no url)`)
+                continue
             }
-        }
 
-        // Show version fetching summary
-        console.log(chalk.cyan`\nVersion fetch summary:`)
-        console.log(chalk.green`  ✓ Success: ${versionSuccessCount} mods`)
-        if (versionFailCount > 0) {
-            console.log(chalk.red`  ✗ Failed: ${versionFailCount} mods`)
-            if (versionErrors.length <= 5) {
-                console.log(chalk.gray`\nFailed mods:`)
-                versionErrors.forEach(({ mod, error }) => {
-                    console.log(chalk.gray`  - ${mod}: ${error}`)
-                })
+            const remote = normalizeRemote(info.url)
+            const index = registry.findIndex(m => m.remote && normalizeRemote(m.remote) === remote)
+
+            if (index < 0) {
+                if (info.disabled) {
+                    stats.skippedDisabled++
+                    console.info(chalk.gray`\t${displayName} skipped (disabled upstream)`)
+                    continue
+                }
+                const entry = {
+                    name: info.name ?? key,
+                    label: info.display_name ?? titleCase(info.name ?? key),
+                    remote: info.url,
+                    remark: categoryRemark,
+                }
+                if (info.branch) entry.branch = info.branch
+                registry.push(entry)
+                stats.added++
+                console.info(chalk.green`\t${entry.label} added`)
+                continue
+            }
+
+            const existing = registry[index]
+            const updated = {
+                ...existing,
+                name: existing.name ?? info.name ?? key,
+                label: existing.label ?? info.display_name ?? titleCase(info.name ?? key),
+                remark: existing.remark || categoryRemark,
+            }
+            // The masterlist is authoritative for branches; local pins only survive when upstream sets none
+            if (info.branch) updated.branch = info.branch
+
+            const changed = ['name', 'label', 'remark', 'branch'].some(field => updated[field] !== existing[field])
+            registry[index] = updated
+
+            if (info.disabled && !existing.deprecated) {
+                disabledUpstream.push(updated.label)
+            }
+
+            if (changed) {
+                stats.updated++
+                console.info(chalk.yellow`\t${updated.label} => ${displayName} updated`)
             } else {
-                console.log(chalk.gray`\nShowing first 5 failed mods:`)
-                versionErrors.slice(0, 5).forEach(({ mod, error }) => {
-                    console.log(chalk.gray`  - ${mod}: ${error}`)
-                })
-                console.log(chalk.gray`  ... and ${versionErrors.length - 5} more`)
+                stats.unchanged++
+                console.info(chalk.white`\t${updated.label} => ${displayName} unchanged`)
             }
         }
-    } else {
-        console.log(chalk.cyan`\nSkipped version fetching`)
     }
 
-    await writeFile('./mods.json', JSON.stringify(rwModlist, null, 2))
+    return { stats, disabledUpstream }
+}
+
+/**
+ * Fold entries for repositories that moved. When an active entry's remote is no longer upstream and an
+ * upstream entry has the same folder name, the old entry takes over the new remote, branch and versions,
+ * records its old remote in `previousRemotes`, and the duplicate upstream entry is removed.
+ * The old entry keeps its position, label and remark. Returns the moves as `{ name, from, to }`.
+ */
+function foldMovedEntries(registry, providers) {
+    const upstreamRemotes = new Set()
+    for (const mods of Object.values(providers)) {
+        for (const info of Object.values(mods)) {
+            if (info.url) upstreamRemotes.add(normalizeRemote(info.url))
+        }
+    }
+    const isUpstream = mod => upstreamRemotes.has(normalizeRemote(mod.remote))
+
+    const moves = []
+    const removed = new Set()
+    for (const current of registry) {
+        if (current.deprecated || !isUpstream(current)) continue
+
+        const stale = registry.filter(m =>
+            m !== current && !removed.has(m) && !m.deprecated && m.name === current.name && !isUpstream(m)
+        )
+        // Only fold an unambiguous move: one stale entry for one upstream entry
+        if (stale.length !== 1) continue
+        const old = stale[0]
+
+        const previousRemotes = [...(old.previousRemotes ?? []), ...(current.previousRemotes ?? []), old.remote]
+        const folded = {
+            ...old,
+            remote: current.remote,
+            previousRemotes: previousRemotes.filter((r, i) =>
+                previousRemotes.findIndex(other => normalizeRemote(other) === normalizeRemote(r)) === i
+            ),
+        }
+        if (current.branch) folded.branch = current.branch
+        else delete folded.branch
+        if (current.supportedVersions) folded.supportedVersions = current.supportedVersions
+
+        registry[registry.indexOf(old)] = folded
+        removed.add(current)
+        moves.push({ name: old.name, from: old.remote, to: current.remote })
+    }
+
+    for (let i = registry.length - 1; i >= 0; i--) {
+        if (removed.has(registry[i])) registry.splice(i, 1)
+    }
+    return moves
+}
+
+async function updateVersions(registry) {
+    console.log(chalk.cyan`\nFetching version information for ${registry.length} mods...`)
+    console.log(chalk.gray`(Use --skip-versions or -s to skip this step, --max-wait <seconds> to change the ${maxWaitSeconds}s rate-limit wait cap)\n`)
+
+    let successCount = 0
+    const failures = []
+
+    /** Fetch one mod's versions. Returns a deferral `{ index, host, resumeAt }` when its host is rate limited. */
+    const processMod = async (index) => {
+        const mod = registry[index]
+        try {
+            const versions = await fetchModVersions(mod.remote, mod.branch)
+            registry[index] = { ...mod, supportedVersions: versions }
+            successCount++
+            console.log(chalk.green`✓ ${mod.label.padEnd(50)} ${chalk.yellow`[${versions.join(', ')}]`}`)
+            return null
+        } catch (err) {
+            if (err.code === 'HOST_EXHAUSTED') {
+                console.log(chalk.gray`⏳ ${mod.label.padEnd(50)} (deferred, ${err.host} resumes in ${secondsUntil(err.resumeAt)}s)`)
+                return { index, host: err.host, resumeAt: err.resumeAt, error: err.message }
+            }
+            failures.push({ mod: mod.label, error: err.message })
+            console.log(chalk.red`✗ ${mod.label.padEnd(50)} ${chalk.gray`(${err.message})`}`)
+            return null
+        }
+    }
+
+    let deferred = []
+    for (let i = 0; i < registry.length; i++) {
+        if (registry[i].deprecated || !registry[i].remote) continue
+        const deferral = await processMod(i)
+        if (deferral) deferred.push(deferral)
+    }
+
+    // Retry rate-limited mods once their host's Retry-After has passed, earliest host first
+    for (let round = 1; round <= MAX_DEFERRAL_ROUNDS && deferred.length > 0; round++) {
+        console.log(chalk.cyan`\nRetry round ${round}/${MAX_DEFERRAL_ROUNDS}: ${deferred.length} deferred mods`)
+        deferred.sort((a, b) => a.resumeAt - b.resumeAt)
+
+        const next = []
+        const reblocked = new Set()
+        for (const item of deferred) {
+            // Host blocked us again this round: wait once in the next round instead of once per mod
+            if (reblocked.has(item.host)) {
+                next.push(item)
+                continue
+            }
+
+            const resumeAt = exhaustedHosts.get(item.host) ?? item.resumeAt
+            const waitSeconds = secondsUntil(resumeAt)
+            if (waitSeconds > maxWaitSeconds) {
+                const resumeTime = new Date(resumeAt).toLocaleTimeString()
+                failures.push({
+                    mod: registry[item.index].label,
+                    error: `${item.host} rate limited until ${resumeTime} (${waitSeconds}s, over --max-wait ${maxWaitSeconds}s)`,
+                })
+                continue
+            }
+            if (waitSeconds > 0) {
+                console.log(chalk.gray`  ⏸ Waiting ${waitSeconds}s for ${item.host} to accept requests again...`)
+                await sleep(resumeAt - Date.now())
+            }
+
+            const deferral = await processMod(item.index)
+            if (deferral) {
+                reblocked.add(deferral.host)
+                next.push(deferral)
+            }
+        }
+        deferred = next
+    }
+
+    for (const item of deferred) {
+        failures.push({ mod: registry[item.index].label, error: `${item.error} (gave up after ${MAX_DEFERRAL_ROUNDS} retry rounds)` })
+    }
+
+    const tooLong = failures.filter(f => f.error.includes('over --max-wait'))
+    if (tooLong.length > 0) {
+        console.log(chalk.yellow`\n${tooLong.length} mods skipped because their host's rate limit outlasts --max-wait; they keep their previous versions.`)
+    }
+
+    console.log(chalk.cyan`\nVersion fetch summary:`)
+    console.log(chalk.green`  ✓ Success: ${successCount} mods`)
+    if (failures.length > 0) {
+        console.log(chalk.red`  ✗ Failed: ${failures.length} mods`)
+        console.log(chalk.gray`\n${failures.length > 5 ? 'Showing first 5 failed mods' : 'Failed mods'}:`)
+        failures.slice(0, 5).forEach(({ mod, error }) => console.log(chalk.gray`  - ${mod}: ${error}`))
+        if (failures.length > 5) console.log(chalk.gray`  ... and ${failures.length - 5} more`)
+    }
+}
+
+// --- main --------------------------------------------------------------------
+
+async function main() {
+    if (skipVersions) {
+        console.log(chalk.cyan`Skipping version fetching (--skip-versions flag detected)`)
+    }
+
+    /** @type {Array<Record<string, unknown>>} */
+    const registry = JSON.parse(await readFile(MODS_FILE, 'utf8'))
+
+    const masterlist = await downloadMasterlist()
+    console.log(chalk.green`Downloaded masterlist (${MASTERLIST_FILE}@${MASTERLIST_REF})`)
+
+    const { stats, disabledUpstream } = mergeProviders(registry, masterlist.providers)
+    const moves = foldMovedEntries(registry, masterlist.providers)
+
+    console.log(chalk.cyan`\nMasterlist summary:`)
+    console.log(chalk.green`  + Added:     ${stats.added}`)
+    console.log(chalk.yellow`  ~ Updated:   ${stats.updated}`)
+    console.log(chalk.white`  = Unchanged: ${stats.unchanged}`)
+    console.log(chalk.gray`  - Skipped:   ${stats.skippedNonGit} non-git, ${stats.skippedDisabled} disabled`)
+    if (disabledUpstream.length > 0) {
+        console.log(chalk.yellow`\nDisabled upstream but still active in mods.json (consider marking deprecated):`)
+        disabledUpstream.forEach(label => console.log(chalk.yellow`  - ${label}`))
+    }
+    if (moves.length > 0) {
+        console.log(chalk.cyan`\nMoved repositories (${moves.length}); installs on the old remote can be relinked with \`rw-lazy-installer check\`:`)
+        moves.forEach(({ name, from, to }) => console.log(chalk.cyan`  - ${name}: ${from} → ${to}`))
+    }
+
+    const byName = new Map()
+    for (const mod of registry) {
+        if (mod.deprecated) continue
+        byName.set(mod.name, [...(byName.get(mod.name) ?? []), mod.remote])
+    }
+    const collisions = [...byName].filter(([, remotes]) => remotes.length > 1)
+    if (collisions.length > 0) {
+        console.log(chalk.red`\nActive entries sharing an install folder (upstream likely moved the repository):`)
+        collisions.forEach(([name, remotes]) => console.log(chalk.red`  - ${name}: ${remotes.join(', ')}`))
+    }
+
+    if (skipVersions) {
+        console.log(chalk.cyan`\nSkipped version fetching`)
+    } else {
+        await updateVersions(registry)
+    }
+
+    await writeFile(MODS_FILE, JSON.stringify(registry, null, 2))
     console.log(chalk.green`\nFinished updating mods.json\n`)
-    
-    // Clean up HTTPS agent to allow process to exit
-    https.globalAgent.destroy()
 }
 
-// Check for command line arguments
-const skipVersions = process.argv.includes('--skip-versions') || process.argv.includes('-s')
-
-if (skipVersions) {
-    console.log(chalk.cyan`Skipping version fetching (--skip-versions flag detected)`)
-}
-
-let data = '';
-https.get(masterlistUrl, { headers: { 'User-Agent': USER_AGENT } }, response => {
-    response.on('data', d => data += d)
-    response.on('end', () => {
-        console.log(chalk.green`Downloaded masterlist`)
-
-        updateMasterlist(JSON.parse(data))
-    })
+main().catch(err => {
+    console.error(chalk.red`Masterlist update failed: ${err.message}`)
+    process.exitCode = 1
 })

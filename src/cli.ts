@@ -70,7 +70,8 @@ program
       dir: program.opts().dir,
       configKey: 'rimworld-lazy-installer',
       log: options.log,
-      relevant: options.relevant
+      relevant: options.relevant,
+      registry: modsRegistry
     });
   });
 

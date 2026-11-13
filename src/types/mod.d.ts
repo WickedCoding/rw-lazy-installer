@@ -18,6 +18,12 @@ export interface Mod {
   /** Git repository URL */
   remote: string;
 
+  /** Branch to clone; the remote's default branch is used when omitted */
+  branch?: string;
+
+  /** Remotes this mod was hosted at before it moved; installs still pointing there can be relinked */
+  previousRemotes?: string[];
+
   /** Additional notes or warnings */
   remark?: string;
 

@@ -26,11 +26,16 @@ export class RepositoryManager {
   }
 
   /**
-   * Clone a repository to a destination directory
+   * Clone a repository to a destination directory.
+   * Checks out `branch` when given, otherwise the remote's default branch.
    */
-  async cloneRepository(url: string, destination: string): Promise<void> {
+  async cloneRepository(url: string, destination: string, branch?: string): Promise<void> {
     try {
-      await this.git.clone(url, destination);
+      if (branch) {
+        await this.git.clone(url, destination, ['--branch', branch]);
+      } else {
+        await this.git.clone(url, destination);
+      }
     } catch (error) {
       throw new Error(`Failed to clone repository from ${url}: ${(error as Error).message}`);
     }
@@ -170,6 +175,45 @@ export class RepositoryManager {
       await repo.remote(['set-url', 'origin', url]);
     } catch (error) {
       throw new Error(`Failed to set remote URL on ${path}: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Name of the checked-out branch, or undefined for a detached HEAD or an unreadable repository
+   */
+  async getCurrentBranch(path: string): Promise<string | undefined> {
+    try {
+      const repo = simpleGit({
+        ...this.gitOptions,
+        baseDir: path,
+      });
+      const branch = (await repo.revparse(['--abbrev-ref', 'HEAD'])).trim();
+      return branch && branch !== 'HEAD' ? branch : undefined;
+    } catch (error) {
+      return undefined;
+    }
+  }
+
+  /**
+   * Fetch origin and switch to `branch`, tracking `origin/<branch>`.
+   * Reuses an existing local branch of that name, otherwise creates it from the remote branch.
+   */
+  async checkoutBranch(path: string, branch: string): Promise<void> {
+    try {
+      const repo = simpleGit({
+        ...this.gitOptions,
+        baseDir: path,
+      });
+      await repo.fetch('origin');
+      const local = await repo.branchLocal();
+      if (local.all.includes(branch)) {
+        await repo.checkout(branch);
+        await repo.branch(['--set-upstream-to', `origin/${branch}`, branch]);
+      } else {
+        await repo.checkout(['-b', branch, '--track', `origin/${branch}`]);
+      }
+    } catch (error) {
+      throw new Error(`Failed to switch ${path} to branch ${branch}: ${(error as Error).message}`);
     }
   }
 

@@ -10,6 +10,7 @@ import type {
   ModFilter,
   InstallationReport
 } from '../types/mod';
+import { sameRemote } from '../utils/remote.js';
 
 /**
  * Result from scanning a directory for mods
@@ -22,6 +23,7 @@ export interface ScanResult {
     remote: string;
     versions: string[];
     isNew: boolean;  // Not in config yet
+    movedFrom?: string;  // Old remote the directory still points at, when the mod moved repositories
   }>;
 
   /** Mods in config but missing from disk */
@@ -63,7 +65,7 @@ export class ModManager {
 
     // Clone repository
     const modPath = path.join(installDir, modName);
-    await this.repository.cloneRepository(mod.remote, modPath);
+    await this.repository.cloneRepository(mod.remote, modPath, mod.branch);
 
     // Extract version info
     let supportedVersions: string[] = [];
@@ -187,6 +189,14 @@ export class ModManager {
 
     await this.repository.setRemoteUrl(directoryPath, target.remote);
 
+    // The masterlist pins a branch: move the checkout onto it so updates follow the right line
+    if (target.branch) {
+      const currentBranch = await this.repository.getCurrentBranch(directoryPath);
+      if (currentBranch !== target.branch) {
+        await this.repository.checkoutBranch(directoryPath, target.branch);
+      }
+    }
+
     let supportedVersions: string[] = [];
     try {
       supportedVersions = await this.extractModVersions(directoryPath);
@@ -301,11 +311,14 @@ export class ModManager {
         return;
       }
 
-      // Check if it's a known mod
-      const mod = this.modsRegistry.find(m =>
-        m.remote === status.remoteUrl ||
-        m.remote.replace('.git', '') === status.remoteUrl?.replace('.git', '')
-      );
+      // Check if it's a known mod, either at its current remote or at a remote it moved away from
+      const remoteUrl = status.remoteUrl;
+      let movedFrom: string | undefined;
+      let mod = this.modsRegistry.find(m => sameRemote(m.remote, remoteUrl));
+      if (!mod) {
+        mod = this.modsRegistry.find(m => m.previousRemotes?.some(r => sameRemote(r, remoteUrl)));
+        if (mod) movedFrom = remoteUrl;
+      }
 
       if (!mod) {
         result.unknown.push(dir);
@@ -329,6 +342,7 @@ export class ModManager {
         remote: mod.remote,
         versions,
         isNew,
+        ...(movedFrom ? { movedFrom } : {}),
       });
     });
 

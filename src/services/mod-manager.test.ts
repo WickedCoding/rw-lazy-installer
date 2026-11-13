@@ -70,6 +70,7 @@ describe('ModManager', () => {
         name: 'test-mod-2',
         label: 'Test Mod 2',
         remote: 'https://github.com/test/test-mod-2.git',
+        branch: 'develop',
         deprecated: false
       },
       {
@@ -148,10 +149,21 @@ describe('ModManager', () => {
 
       expect(mockRepository.cloneRepository).toHaveBeenCalledWith(
         'https://github.com/test/test-mod-1.git',
-        '/test/mods/test-mod-1'
+        '/test/mods/test-mod-1',
+        undefined
       );
 
       expect(mockConfig.addOrUpdateInstalledMod).toHaveBeenCalled();
+    });
+
+    it('should clone the registry branch when the mod defines one', async () => {
+      await modManager.installMod('test-mod-2', '/test/mods');
+
+      expect(mockRepository.cloneRepository).toHaveBeenCalledWith(
+        'https://github.com/test/test-mod-2.git',
+        '/test/mods/test-mod-2',
+        'develop'
+      );
     });
 
     it('should throw error for unknown mod', async () => {
@@ -387,6 +399,41 @@ describe('ModManager', () => {
         name: 'test-mod-2',
         isNew: false
       });
+    });
+
+    it('should recognise a directory still pointing at a moved repository', async () => {
+      testMods[0].previousRemotes = ['https://github.com/old-owner/test-mod-1.git'];
+      vi.mocked(fs.readdir).mockResolvedValueOnce(['test-mod-1'] as any);
+      mockRepository.getRepositoryStatus = vi.fn().mockResolvedValue({
+        isValidRepo: true,
+        currentCommit: 'abc123',
+        remoteUrl: 'https://github.com/Old-Owner/test-mod-1'
+      });
+
+      const result = await modManager.scanDirectory('/test/mods');
+
+      expect(result.unknown).toEqual([]);
+      expect(result.found).toHaveLength(1);
+      expect(result.found[0]).toMatchObject({
+        name: 'test-mod-1',
+        modName: 'test-mod-1',
+        remote: 'https://github.com/test/test-mod-1.git',
+        movedFrom: 'https://github.com/Old-Owner/test-mod-1'
+      });
+    });
+
+    it('should not mark directories on the current remote as moved', async () => {
+      testMods[0].previousRemotes = ['https://github.com/old-owner/test-mod-1.git'];
+      vi.mocked(fs.readdir).mockResolvedValueOnce(['test-mod-1'] as any);
+      mockRepository.getRepositoryStatus = vi.fn().mockResolvedValue({
+        isValidRepo: true,
+        currentCommit: 'abc123',
+        remoteUrl: 'https://github.com/test/test-mod-1.git'
+      });
+
+      const result = await modManager.scanDirectory('/test/mods');
+
+      expect(result.found[0].movedFrom).toBeUndefined();
     });
 
     it('should identify unknown directories', async () => {
@@ -639,8 +686,34 @@ describe('ModManager', () => {
       });
       mockRepository.setRemoteUrl = vi.fn().mockResolvedValue(undefined);
       mockRepository.hasUncommittedChanges = vi.fn().mockResolvedValue(false);
+      mockRepository.getCurrentBranch = vi.fn().mockResolvedValue('main');
+      mockRepository.checkoutBranch = vi.fn().mockResolvedValue(undefined);
       mockConfig.findInstalledModByRemote = vi.fn().mockReturnValue(undefined);
       mockConfig.getInstalledMods = vi.fn().mockReturnValue([]);
+    });
+
+    it('should switch to the registry branch when the checkout is on another branch', async () => {
+      await modManager.relinkMod(directoryName, 'test-mod-2', installDir);
+
+      expect(mockRepository.checkoutBranch).toHaveBeenCalledWith(directoryPath, 'develop');
+      const setUrlOrder = vi.mocked(mockRepository.setRemoteUrl).mock.invocationCallOrder[0];
+      const checkoutOrder = vi.mocked(mockRepository.checkoutBranch).mock.invocationCallOrder[0];
+      expect(setUrlOrder).toBeLessThan(checkoutOrder);
+    });
+
+    it('should not switch branches when the checkout already matches the registry branch', async () => {
+      mockRepository.getCurrentBranch = vi.fn().mockResolvedValue('develop');
+
+      await modManager.relinkMod(directoryName, 'test-mod-2', installDir);
+
+      expect(mockRepository.checkoutBranch).not.toHaveBeenCalled();
+    });
+
+    it('should leave the branch alone when the registry pins none', async () => {
+      await modManager.relinkMod(directoryName, 'test-mod-1', installDir);
+
+      expect(mockRepository.getCurrentBranch).not.toHaveBeenCalled();
+      expect(mockRepository.checkoutBranch).not.toHaveBeenCalled();
     });
 
     it('should rewrite remote and write a new installation record', async () => {
