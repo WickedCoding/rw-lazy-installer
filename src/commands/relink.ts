@@ -33,6 +33,9 @@ export async function relinkCommand(
       chalk.white`${installation.modId}`
     );
     console.log(chalk.gray`  remote: ${installation.remote}`);
+    if (targetMod?.branch) {
+      console.log(chalk.gray`  branch: ${targetMod.branch}`);
+    }
     if (installation.supportedVersions && installation.supportedVersions.length > 0) {
       console.log(chalk.gray`  versions: ${installation.supportedVersions.join(', ')}`);
     }

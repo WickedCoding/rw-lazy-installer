@@ -41,6 +41,18 @@ export async function checkCommand(
         console.log(chalk.green`\tFound`, chalk.white`${mod.name}`, chalk.green`as installed mod`);
       }
 
+      if (found.movedFrom) {
+        console.log(
+          chalk.yellow`\t  ⚠ repository moved from`,
+          chalk.white`${found.movedFrom}`,
+          chalk.yellow`to`,
+          chalk.white`${mod.remote}`
+        );
+        console.log(
+          chalk.gray`\t    run: rw-lazy-installer relink ${found.name} ${mod.name}`
+        );
+      }
+
       const sibling = modManager.findActiveSibling(mod);
       if (sibling) {
         console.log(

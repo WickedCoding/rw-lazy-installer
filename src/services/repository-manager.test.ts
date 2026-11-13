@@ -100,6 +100,16 @@ describe('RepositoryManager', () => {
       expect(mockClone).toHaveBeenCalledTimes(1);
     });
 
+    it('should clone a specific branch when one is given', async () => {
+      const url = 'https://github.com/test/repo.git';
+      const destination = '/test/path';
+
+      await repoManager.cloneRepository(url, destination, 'develop');
+
+      expect(mockClone).toHaveBeenCalledWith(url, destination, ['--branch', 'develop']);
+      expect(mockClone).toHaveBeenCalledTimes(1);
+    });
+
     it('should throw error when clone fails', async () => {
       const url = 'https://github.com/test/repo.git';
       const destination = '/test/path';

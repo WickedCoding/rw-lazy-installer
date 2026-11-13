@@ -2,12 +2,45 @@ import chalk from 'chalk';
 import { ConfigManager } from '../services/config-manager.js';
 import { RepositoryManager } from '../services/repository-manager.js';
 import type { CommandOptions } from '../types/command.js';
+import type { Mod, ModInstallation } from '../types/mod.js';
+import { sameRemote } from '../utils/remote.js';
 
 interface UpdateCommandOptions extends CommandOptions {
   /** Show changelog for all mods */
   log?: boolean;
   /** Show changelog only for updated mods */
   relevant?: boolean;
+  /** Mod registry; enables warnings for installs that drifted from the masterlist (branch or moved remote) */
+  registry?: Mod[];
+}
+
+/**
+ * Warnings for an install whose checkout no longer matches the registry: a different branch
+ * than the masterlist pins, or a remote the mod has moved away from. Both are fixed by `relink`.
+ */
+async function registryDriftWarnings(
+  installed: ModInstallation,
+  registry: Mod[],
+  repoManager: RepositoryManager
+): Promise<string[]> {
+  const movedEntry = registry.find(m => m.previousRemotes?.some(r => sameRemote(r, installed.remote)));
+  const entry = movedEntry ?? registry.find(m => sameRemote(m.remote, installed.remote));
+  if (!entry) return [];
+
+  const warnings: string[] = [];
+  if (movedEntry) {
+    warnings.push(`repository moved to ${entry.remote}`);
+  }
+  if (entry.branch) {
+    const currentBranch = await repoManager.getCurrentBranch(installed.directory);
+    if (currentBranch && currentBranch !== entry.branch) {
+      warnings.push(`on branch '${currentBranch}', masterlist pins '${entry.branch}'`);
+    }
+  }
+  if (warnings.length > 0) {
+    warnings.push(`run: rw-lazy-installer relink ${installed.name} ${entry.name}`);
+  }
+  return warnings;
 }
 
 /**
@@ -58,11 +91,20 @@ export async function updateCommand(
   let updatedCount = 0;
   let failedCount = 0;
   const updateResults: Array<{ mod: string; status: 'updated' | 'no-changes' | 'failed'; error?: string }> = [];
+  const driftedMods: string[] = [];
 
   // Update each mod
   for (const mod of modsToUpdate) {
     try {
       console.log(chalk.blue(`Checking ${mod.name}...`));
+
+      if (options.registry) {
+        const warnings = await registryDriftWarnings(mod, options.registry, repoManager);
+        if (warnings.length > 0) {
+          driftedMods.push(mod.name);
+          warnings.forEach(warning => console.log(chalk.yellow(`  ⚠ ${warning}`)));
+        }
+      }
 
       // Get current commit before update
       const beforeCommit = await repoManager.getCurrentCommit(mod.directory);
@@ -140,6 +182,9 @@ export async function updateCommand(
   console.log(chalk.cyan('\n=== Update Summary ==='));
   console.log(chalk.green(`✓ ${updatedCount} mod(s) updated`));
   console.log(chalk.gray(`= ${updateResults.filter(r => r.status === 'no-changes').length} mod(s) already up to date`));
+  if (driftedMods.length > 0) {
+    console.log(chalk.yellow(`⚠ ${driftedMods.length} mod(s) need a relink: ${driftedMods.join(', ')}`));
+  }
   if (failedCount > 0) {
     console.log(chalk.red(`✗ ${failedCount} mod(s) failed to update`));
 

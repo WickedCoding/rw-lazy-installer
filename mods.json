@@ -22,7 +22,8 @@
       1.4,
       1.5,
       1.6
-    ]
+    ],
+    "branch": "main"
   },
   {
     "label": "Rimnosis NSFW",
@@ -40,7 +41,8 @@
     "remark": "Animations",
     "supportedVersions": [
       1.6
-    ]
+    ],
+    "branch": "master"
   },
   {
     "label": "AnimAddons - Voice Patch",
@@ -106,7 +108,8 @@
       1.4,
       1.5,
       1.6
-    ]
+    ],
+    "remark": "Ideology"
   },
   {
     "label": "Cumpilation",
@@ -209,15 +212,6 @@
     ]
   },
   {
-    "label": "Rimvore 2",
-    "name": "rimvore-2",
-    "remote": "https://gitlab.com/Nabber/rimvore-2",
-    "supportedVersions": [
-      1.5,
-      1.6
-    ]
-  },
-  {
     "label": "RJW",
     "name": "rjw",
     "remote": "https://gitgud.io/Ed86/rjw.git",
@@ -251,7 +245,8 @@
       1.4,
       1.5,
       1.6
-    ]
+    ],
+    "branch": "master"
   },
   {
     "label": "RJW - Cum",
@@ -379,7 +374,8 @@
       1.5,
       1.6,
       1.7
-    ]
+    ],
+    "branch": "main"
   },
   {
     "label": "RJW - Genes - Spawn Genes",
@@ -519,7 +515,8 @@
     "remark": "Extra",
     "supportedVersions": [
       1.5,
-      1.6
+      1.6,
+      1.7
     ]
   },
   {
@@ -605,11 +602,15 @@
   {
     "label": "Sized Apparel - Zero",
     "name": "sized-apparel-zero",
-    "remote": "https://gitgud.io/ll.mirrors/sized-apparel-zero.git",
+    "remote": "https://gitgud.io/jikulopo/sized-apparel-zero.git",
     "remark": "Bodies",
     "supportedVersions": [
       1.5,
-      1.6
+      1.6,
+      1.7
+    ],
+    "previousRemotes": [
+      "https://gitgud.io/ll.mirrors/sized-apparel-zero.git"
     ]
   },
   {
@@ -725,7 +726,8 @@
     "supportedVersions": [
       1.6,
       1.7
-    ]
+    ],
+    "branch": "master"
   },
   {
     "name": "nutritious-cum",
@@ -799,11 +801,14 @@
   {
     "name": "nudity-matters-more",
     "label": "Nudity Matters More",
-    "remote": "https://gitgud.io/dordheaven/nudity-matters-more.git",
+    "remote": "https://gitgud.io/Mrcl/nudity-matters-more.git",
     "remark": "Extra",
     "supportedVersions": [
       1.5,
       1.6
+    ],
+    "previousRemotes": [
+      "https://gitgud.io/dordheaven/nudity-matters-more.git"
     ]
   },
   {
@@ -875,10 +880,14 @@
   {
     "name": "rjw-cocoon",
     "label": "RJW - Cocoon",
-    "remote": "https://gitgud.io/ll.mirrors/rjw-cocoon.git",
+    "remote": "https://gitgud.io/jikulopo/rjw-cocoon.git",
     "remark": "Extra",
     "supportedVersions": [
-      1.5
+      1.5,
+      1.6
+    ],
+    "previousRemotes": [
+      "https://gitgud.io/ll.mirrors/rjw-cocoon.git"
     ]
   },
   {
@@ -898,10 +907,15 @@
   {
     "name": "self-insemination",
     "label": "Self Insemination",
-    "remote": "https://gitgud.io/MimiNil/self-insemination.git",
+    "remote": "https://gitgud.io/TeH_Dav/self-insemination.git",
     "remark": "Extra",
     "supportedVersions": [
-      1.5
+      1.5,
+      1.6,
+      1.7
+    ],
+    "previousRemotes": [
+      "https://gitgud.io/MimiNil/self-insemination.git"
     ]
   },
   {
@@ -989,10 +1003,14 @@
   {
     "name": "sized-apparel-extended",
     "label": "Sized Apparel - Extended",
-    "remote": "https://gitgud.io/ll.mirrors/sized-apparel-extended.git",
+    "remote": "https://gitgud.io/jikulopo/sized-apparel-extended.git",
     "remark": "Bodies",
     "supportedVersions": [
-      1.5
+      1.5,
+      1.6
+    ],
+    "previousRemotes": [
+      "https://gitgud.io/ll.mirrors/sized-apparel-extended.git"
     ]
   },
   {
@@ -1117,12 +1135,15 @@
   {
     "name": "rjw-extra-patchs",
     "label": "RJW - Extra Patches",
-    "remote": "https://gitgud.io/RobTheRobotGuard/rjw-extra-patchs.git",
+    "remote": "https://codeberg.org/RobTheRobotGuard/RJW_Extra_Race_Patches.git",
     "remark": "Races",
     "supportedVersions": [
-      1.4,
       1.5,
-      1.6
+      1.6,
+      1.7
+    ],
+    "previousRemotes": [
+      "https://gitgud.io/RobTheRobotGuard/rjw-extra-patchs.git"
     ]
   },
   {
@@ -1374,7 +1395,8 @@
       1.3,
       1.4,
       1.5,
-      1.6
+      1.6,
+      1.7
     ]
   },
   {
@@ -1458,7 +1480,8 @@
     "remark": "Furniture",
     "supportedVersions": [
       1.5,
-      1.6
+      1.6,
+      1.7
     ]
   },
   {
@@ -1479,7 +1502,8 @@
     "supportedVersions": [
       1.4,
       1.5,
-      1.6
+      1.6,
+      1.7
     ]
   },
   {
@@ -1499,17 +1523,20 @@
     "remark": "Races",
     "supportedVersions": [
       1.5,
-      1.6
+      1.6,
+      1.7
     ]
   },
   {
     "label": "Amor Tentaculum",
     "name": "amor-tentaculum",
-    "remote": "https://github.com/MrCastle69/Amor-tentaculum.git",
+    "remote": "https://github.com/Pahanda/amor-tentaculum.git",
     "remark": "Requires 'EBSG Framework' and 'Vanilla Expanded Framework'",
     "supportedVersions": [
-      1.5,
-      1.6
+      1.7
+    ],
+    "previousRemotes": [
+      "https://github.com/MrCastle69/Amor-tentaculum.git"
     ]
   },
   {
@@ -1578,6 +1605,735 @@
     "supportedVersions": [
       1.6,
       1.7
+    ],
+    "remark": "Resources"
+  },
+  {
+    "name": "rjw-peculiar-institution",
+    "label": "Peculiar Institution",
+    "remote": "https://gitgud.io/readyforjeff/rjwpeculiarinstitution.git",
+    "remark": "Ideology",
+    "supportedVersions": [
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "rains-rjw-addons",
+    "label": "Rains RJW Addons",
+    "remote": "https://gitgud.io/Ryufais/rains-rjw-addons.git",
+    "remark": "Royalty",
+    "supportedVersions": [
+      1.5,
+      1.6
+    ]
+  },
+  {
+    "name": "rjw-extra-xenotype-patches",
+    "label": "RJW Extra Xenotype Patches",
+    "remote": "https://codeberg.org/RobTheRobotGuard/RJW_Extra_Xenotyoe_Patches.git",
+    "remark": "Biotech",
+    "supportedVersions": [
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "rjw-animal-gene-inheritance",
+    "label": "RJW Animal Gene Inheritance",
+    "remote": "https://gitgud.io/Telanda/rjw-animal-gene-inheritance.git",
+    "remark": "Biotech",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "human-cattle",
+    "label": "Human Cattle - Yet Another Milk Mod",
+    "remote": "https://gitgud.io/doop0707/human-cattle-yet-another-milk-mod.git",
+    "remark": "Biotech",
+    "supportedVersions": [
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "rjw-quirks",
+    "label": "RJW Quirks Framework",
+    "remote": "https://gitgud.io/amevarashi/rjw-quirks.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "milk-based-drugs",
+    "label": "Milk Based Drugs",
+    "remote": "https://codeberg.org/RobTheRobotGuard/RW-MilkBaseDrugs.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "rjw-whorebeds",
+    "label": "RJW Whorebeds",
+    "remote": "https://gitgud.io/cptyossarian/rjw-whorebeds.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.1,
+      1.2,
+      1.3,
+      1.4,
+      1.5,
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "slimegirl-rjw-edition",
+    "label": "Slime Girl Rimjob Edition",
+    "remote": "https://github.com/Ryufais/SlimeGirl-RJW-Edition.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1,
+      1.1,
+      1.2,
+      1.6
+    ]
+  },
+  {
+    "name": "rjw-gasses",
+    "label": "RimJobWorld - Gasses",
+    "remote": "https://gitgud.io/N3f/rjw-gasses.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.4,
+      1.5,
+      1.6
+    ]
+  },
+  {
+    "name": "aci-rjwedition",
+    "label": "Allow Consensual Incest - RJW Edition",
+    "remote": "https://gitgud.io/Worldie/aci-rjwedition.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "cumpilation-cum-network",
+    "label": "RJW Cumpilation Cum Network",
+    "remote": "https://gitlab.com/mod.fr.rjw/cpn.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.5
+    ]
+  },
+  {
+    "name": "rimjobworld-onahole-mimic",
+    "label": "RimJobWorld - Onahole Mimic RJW",
+    "remote": "https://gitlab.com/zioklone/rimjobworld-onahole-mimic.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "hotels-and-recreation",
+    "label": "Hotels and Recreation",
+    "remote": "https://codeberg.org/RobTheRobotGuard/Hotels-and-Recreation.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "nudity-matters-more-combined-edition",
+    "label": "Nudity Matters More Combined Edition",
+    "remote": "https://gitgud.io/Delzarin/nmm-combined-continue.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.7
+    ]
+  },
+  {
+    "name": "knotphile",
+    "label": "Knotphile",
+    "remote": "https://gitgud.io/Nalzurin/knotphile.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "rjw-sexperience-sexskillboostsbreakingprogress",
+    "label": "SexSkillBoostsBreakingProgress",
+    "remote": "https://github.com/huy9182/SexSkillBoostsBreakingProgress.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "licentia-serums",
+    "label": "Licentia Serums",
+    "remote": "https://gitgud.io/Ryufais/licentia-serums",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "rjw-insects",
+    "label": "RJW Insects",
+    "remote": "https://gitgud.io/Ed86/rjw-insects.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "RJW-Tweaks",
+    "label": "RJW Tweaks",
+    "remote": "https://gitgud.io/Euclidean/rjw-tweaks",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "rjw-industrial-milk-management",
+    "label": "RJW Industrial Milk Management",
+    "remote": "https://codeberg.org/RobTheRobotGuard/RJW-Industrial-Milk-Management.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "i-want-incest",
+    "label": "I Want Incest",
+    "remote": "https://gitgud.io/nuganee/i-want-incest.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1,
+      1.1,
+      1.2,
+      1.3,
+      1.4,
+      1.5,
+      1.6
+    ]
+  },
+  {
+    "name": "romance-tweaks-more-options",
+    "label": "Romance Tweaks More Options",
+    "remote": "https://gitgud.io/nuganee/romance-tweaks-more-options.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1,
+      1.1,
+      1.2,
+      1.3,
+      1.4,
+      1.5,
+      1.6
+    ]
+  },
+  {
+    "name": "photographer-nsfw-effects",
+    "label": "Photographer NSFW Effects",
+    "remote": "https://gitgud.io/aoinasuko/photographer_nsfw_effects.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.5,
+      1.6
+    ]
+  },
+  {
+    "name": "petifcation",
+    "label": "Petification",
+    "remote": "https://gitgud.io/TeH_Dav/petification.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.5,
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "slave-pet-bed-thoughts",
+    "label": "Slave Pet Bed Thoughts",
+    "remote": "https://github.com/ScarletMidnight/RimWorld_PetBedSharing.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.5,
+      1.6
+    ]
+  },
+  {
+    "name": "rjw-cnc",
+    "label": "RJW Consensual Non-Consent",
+    "remote": "https://gitlab.com/mod-moth/rjw-cnc.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "luxandra-lust",
+    "label": "Luxandra Lust - The RimJobWorld based storyteller",
+    "remote": "https://gitgud.io/Worldie/luxandra-lust",
+    "remark": "Extra",
+    "branch": "main",
+    "supportedVersions": [
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "gerrymons-rjw-retexture",
+    "label": "Gerrymon's RJW Retexture",
+    "remote": "https://github.com/gerrymon96/Gerrymon-s-RJW-Retexture.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "rjw-oddly-specific",
+    "label": "RJW OddlySpecific",
+    "remote": "https://gitgud.io/readyforjeff/rjwoddlyspecific.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.7
+    ]
+  },
+  {
+    "name": "rjw-parasite-project",
+    "label": "RimJobWorld - Parasite",
+    "remote": "https://gitgud.io/Marionette/rjw-parasite-project.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "rjw-elt-patches",
+    "label": "ElToro Patches",
+    "remote": "https://gitgud.io/ElToro/rjw-elt-patches.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.5,
+      1.6
+    ]
+  },
+  {
+    "name": "hotwiferjw",
+    "label": "HotwifeRJW",
+    "remote": "https://github.com/betaforher69/HotwifeRJW.git",
+    "remark": "Extra",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "dreadbed-a-fleshbeast-tentacle-seedbed-mod",
+    "label": "Dreadbed - A Fleshbeast Tentacle Seedbed Mod",
+    "remote": "https://gitgud.io/doop0707/dreadbed-a-fleshbeast-tentacle-seedbed-mod.git",
+    "remark": "Anomaly",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "sized-apparel-for-slaves",
+    "label": "Sized Apparel for slaves",
+    "remote": "https://gitgud.io/cptyossarian/sized-apparel-for-slaves.git",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.3,
+      1.4,
+      1.5,
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "sized-apparel-smelted-loong",
+    "label": "Sized Apparel SMELTED LOONG",
+    "remote": "https://gitgud.io/Talos/sizedapparel-smelted-loong.git",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.5,
+      1.6
+    ]
+  },
+  {
+    "name": "sized-apparel-Miho-Apparel",
+    "label": "Sized Apparel Miho Apparel",
+    "remote": "https://gitgud.io/Talos/sized-apparel-miho-apparel.git",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.5,
+      1.6
+    ]
+  },
+  {
+    "name": "sizedapparel-wolfein",
+    "label": "Sized Apparel Wolfein",
+    "remote": "https://gitgud.io/Talos/sizedapparel-wolfein.git",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.5,
+      1.6
+    ]
+  },
+  {
+    "name": "sizedapparel-ayameduki-race",
+    "label": "Sized Apparel Ayameduki Races",
+    "remote": "https://gitgud.io/Talos/sizedapparel-ayameduki-race.git",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.5,
+      1.6
+    ]
+  },
+  {
+    "name": "SizedApparel-DragonianDoc",
+    "label": "SizedApparel-DragonianDoc",
+    "remote": "https://gitgud.io/Talos/sizedapparel-dragoniandoc",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "rjw-elt-maddon-DMS-Synthroid-support",
+    "label": "rjw-elt-maddon_DMS Synthroid support",
+    "remote": "https://gitgud.io/Talos/rjw-elt-maddon_dms-synthroid-support",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "BEP-Race-SizedApparel",
+    "label": "B.E.P Race SizedApparel",
+    "remote": "https://gitgud.io/Talos/b.e.p-race-sizedapparel",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.5,
+      1.6
+    ]
+  },
+  {
+    "name": "SizedApparel-Realistic-Body",
+    "label": "SizedApparel-Realistic Body",
+    "remote": "https://gitgud.io/Talos/sizedapparel-realistic-body",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "Sized-Apparel-Realistic-Body-More-Apparels",
+    "label": "Sized Apparel-Realistic Body-More Apparels",
+    "remote": "https://gitgud.io/Alxgry/sized-apparel-realistic-body-more-apparels",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.5,
+      1.6
+    ]
+  },
+  {
+    "name": "Nivarian-RJW-Patch",
+    "label": "Nivarian RJW Patch",
+    "remote": "https://gitlab.com/ikarosmelann/nivarian-rjw-patch",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "Sized-Apparel-Monolyn",
+    "label": "Sized Apparel Monolyn",
+    "remote": "https://gitgud.io/Ryufais/sized-apparel-monolyn",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "Sized-Apparel-Draconis-Koelime",
+    "label": "Sized Apparel Draconis Koelime",
+    "remote": "https://gitgud.io/Ryufais/sized-apparel-draconis-koelime",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "Sized-Apparel-MuGirl",
+    "label": "Sized Apparel MuGirl",
+    "remote": "https://gitgud.io/Ryufais/sized-apparel-mugirl",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "AdvancedBattleCloak-SA0",
+    "label": "AdvancedBattleCloak-SA0",
+    "remote": "https://gitgud.io/Ryufais/advancedbattlecloak-sa0",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "DMS-SA0",
+    "label": "DMS SA0",
+    "remote": "https://gitgud.io/Ryufais/DMS-SA0",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "Sized-Apparel-Snow-Rabbit",
+    "label": "Sized Apparel Snow Rabbit",
+    "remote": "https://gitgud.io/SmartFalcon/sizedapparel-snowrabbit",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "SRAE-PlaybunnyCorporation-SA",
+    "label": "SRAE_PlaybunnyCorporation_SA",
+    "remote": "https://gitgud.io/SmartFalcon/srae_playbunnycorporation_sa",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "DakosSAOExtraBodies",
+    "label": "Dakos SAO Extra Bodies",
+    "remote": "https://gitgud.io/DakoDragon/dakossaoextrabodies",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.4,
+      1.5,
+      1.6
+    ]
+  },
+  {
+    "name": "lh-sabpe",
+    "label": "[LH] Sized Apparel Bodies and Parts Extended",
+    "remote": "https://gitgud.io/lordhades/lh-sabpe.git",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.7
+    ]
+  },
+  {
+    "name": "lh-allure",
+    "label": "[LH] Facial Animations: Allure",
+    "remote": "https://gitgud.io/lordhades/lh-allure.git",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.7
+    ]
+  },
+  {
+    "name": "rjw-gonadz-reloaded",
+    "label": "RJW Gonadz Reloaded",
+    "remote": "https://gitgud.io/Marionette/gonadz-reloaded.git",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.7
+    ]
+  },
+  {
+    "name": "rjw-balls-and-ovaries",
+    "label": "RJW Balls and Ovaries",
+    "remote": "https://gitgud.io/Yhenna/rjw-now-with-balls-and-ovaries-i-guess.git",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "rjw-kcd-piercings",
+    "label": "KCD's Piercings",
+    "remote": "https://gitgud.io/KillChopDeluxe/rjw-kcd-piercings.git",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "rjw-shiny-expansion",
+    "label": "Shiny Expansion",
+    "remote": "https://gitgud.io/sarahgia/rjw-shiny-expansion.git",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "rjw-shiny-expansion-sa0-latex-clothing-add-on",
+    "label": "Shiny Expansion - SA0 Latex Apparel Add-On",
+    "remote": "https://gitgud.io/sarahgia/rjw-shiny-expansion-sa0-latex-clothing-add-on.git",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "nicehealthtab-rjw-genitalia",
+    "label": "Nice Health Tab - RJW Genitalia",
+    "remote": "https://github.com/zoc2k/NiceHealthTab_RJW_Genitalia.git",
+    "remark": "Bodies",
+    "supportedVersions": [
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "fantasy-races-alpha-genes",
+    "label": "Alpha Genes Lite (Fantasy Races)",
+    "remote": "https://gitgud.io/Euclidean/alpha-genes-lite.git",
+    "remark": "Races",
+    "supportedVersions": [
+      1.5,
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "rjw-onahofairy-remake",
+    "label": "RJW OnahoFairy Remake",
+    "remote": "https://gitgud.io/aoinasuko/rjw_onahofairy_remake.git",
+    "remark": "Races",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "bep-fairy-furniture-addon-brothel-signs",
+    "label": "Brothel Signs",
+    "remote": "https://gitgud.io/aoinasuko/brothel_signs.git",
+    "remark": "Races",
+    "supportedVersions": [
+      1.5,
+      1.6
+    ]
+  },
+  {
+    "name": "Rimworld-Tentacle-Lord",
+    "label": "Rimworld Tentacle Lord",
+    "remote": "https://gitgud.io/Rel01/Rimworld-Tentacle-Lord",
+    "remark": "Races",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "rjw-animations-adjust-har-race-offset",
+    "label": "RJW Animations adjusts HAR Race Offset",
+    "remote": "https://gitgud.io/Talos/rjw-animations-adjusts-har-race-offset.git",
+    "remark": "Animations",
+    "supportedVersions": [
+      1.5,
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "kemomimihouse-rjw-animations",
+    "label": "Kemomimihouse RJW Animations",
+    "remote": "https://gitlab.com/zioklone/kemomimihouse_rjw_animations.git",
+    "remark": "Animations",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "rjw-life-and-death-animations",
+    "label": "RJW Life And Death Animations",
+    "remote": "https://gitlab.com/zioklone/rjw_life_and_death_amimations.git",
+    "remark": "Animations",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "ass-clap-sounds",
+    "label": "Ass Clap Sounds",
+    "remote": "https://gitgud.io/N00dlez/rjw_assclapsounds",
+    "remark": "Animations",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "unlimited-cumworks",
+    "label": "Unlimited Cumworks",
+    "remote": "https://gitgud.io/Worldie/unlimited-cumworks.git",
+    "remark": "Resources",
+    "supportedVersions": [
+      1.6,
+      1.7
+    ]
+  },
+  {
+    "name": "Furry-Trash-Pack",
+    "label": "Furry Trash Pack",
+    "remote": "https://github.com/Dransvitry/Furry-Trash-Pack",
+    "remark": "Buildings",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "l3wdrugs",
+    "label": "L3wd Rugs",
+    "remote": "https://gitgud.io/Saugerknaut/l3wdrugs.git",
+    "remark": "Buildings",
+    "supportedVersions": [
+      1.6,
+      1.5
+    ]
+  },
+  {
+    "name": "alven-lewd-style",
+    "label": "Alven Lewd Style",
+    "remote": "https://gitgud.io/Delzarin/alven-lewd-style.git",
+    "remark": "Buildings",
+    "supportedVersions": [
+      1.6
+    ]
+  },
+  {
+    "name": "missile-girl",
+    "label": "MissileGirl",
+    "remote": "https://github.com/ViralReaction/MissileGirl.git",
+    "remark": "Performance",
+    "supportedVersions": [
+      1.6
     ]
   }
 ]

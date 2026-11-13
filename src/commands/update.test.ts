@@ -45,6 +45,60 @@ describe('updateCommand', () => {
     vi.restoreAllMocks();
   });
 
+  describe('registry drift warnings', () => {
+    const installed: ModInstallation = {
+      modId: 'mod1',
+      name: 'mod1',
+      directory: '/test/mods/mod1',
+      remote: 'https://github.com/test/mod1.git',
+      installedAt: new Date(),
+      lastUpdated: new Date(),
+    };
+
+    beforeEach(() => {
+      configManager.getInstallationDir.mockReturnValue('/test/mods');
+      configManager.getInstalledMods.mockReturnValue([installed]);
+      repoManager.getCurrentCommit.mockResolvedValue('abc123');
+      repoManager.updateRepository.mockResolvedValue({ success: true });
+      repoManager.getCurrentBranch = vi.fn().mockResolvedValue('master');
+    });
+
+    const output = () => consoleLogSpy.mock.calls.map((call: unknown[]) => call.join(' ')).join('\n');
+
+    it('should warn when the checkout is on a different branch than the masterlist pins, and still update', async () => {
+      const registry = [{ id: 'mod1', name: 'mod1', label: 'Mod 1', remote: 'https://github.com/test/mod1', branch: 'main' }];
+
+      await updateCommand([], { configKey: 'test', registry });
+
+      expect(output()).toContain("on branch 'master', masterlist pins 'main'");
+      expect(output()).toContain('run: rw-lazy-installer relink mod1 mod1');
+      expect(output()).toContain('1 mod(s) need a relink: mod1');
+      expect(repoManager.updateRepository).toHaveBeenCalledWith('/test/mods/mod1');
+    });
+
+    it('should warn when the install points at a remote the mod moved away from', async () => {
+      const registry = [{
+        id: 'mod1', name: 'mod1', label: 'Mod 1',
+        remote: 'https://github.com/new-owner/mod1.git',
+        previousRemotes: ['https://github.com/test/mod1.git'],
+      }];
+
+      await updateCommand([], { configKey: 'test', registry });
+
+      expect(output()).toContain('repository moved to https://github.com/new-owner/mod1.git');
+      expect(repoManager.getCurrentBranch).not.toHaveBeenCalled();
+    });
+
+    it('should stay quiet when the branch matches', async () => {
+      repoManager.getCurrentBranch = vi.fn().mockResolvedValue('main');
+      const registry = [{ id: 'mod1', name: 'mod1', label: 'Mod 1', remote: 'https://github.com/test/mod1.git', branch: 'main' }];
+
+      await updateCommand([], { configKey: 'test', registry });
+
+      expect(output()).not.toContain('⚠');
+    });
+  });
+
   describe('successful updates', () => {
     it('should update all installed mods when no names specified', async () => {
       const installedMods: ModInstallation[] = [
