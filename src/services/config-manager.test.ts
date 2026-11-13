@@ -150,6 +150,20 @@ describe('ConfigManager', () => {
       expect(mods[0].lastUpdated).toEqual(new Date('2024-02-01'));
     });
 
+    it('should update an existing mod whose remote differs only by the .git suffix', () => {
+      configManager.addOrUpdateInstalledMod({ ...testMod, remote: 'https://github.com/test/test-mod' });
+      configManager.addOrUpdateInstalledMod({ ...testMod, modId: 'other-id', remote: 'https://github.com/test/test-mod.git' });
+
+      expect(configManager.getInstalledMods()).toHaveLength(1);
+    });
+
+    it('should not merge two different mods that both lack a modId', () => {
+      configManager.addOrUpdateInstalledMod({ ...testMod, modId: undefined as any, remote: 'https://github.com/test/a.git' });
+      configManager.addOrUpdateInstalledMod({ ...testMod, modId: undefined as any, remote: 'https://github.com/test/b.git' });
+
+      expect(configManager.getInstalledMods()).toHaveLength(2);
+    });
+
     it('should remove an installed mod by modId', () => {
       configManager.setInstalledMods([testMod]);
 

@@ -351,8 +351,7 @@ export class ModManager {
     // Find mods that are in config but not on disk
     const foundRemotes = result.found.map(f => f.remote);
     result.missing = configuredMods.filter(m =>
-      !foundRemotes.includes(m.remote) &&
-      !foundRemotes.includes(m.remote.replace('.git', ''))
+      !foundRemotes.some(remote => sameRemote(remote, m.remote))
     );
 
     return result;
@@ -369,7 +368,7 @@ export class ModManager {
 
     // Add all found mods
     for (const found of scanResult.found) {
-      const mod = this.modsRegistry.find(m => m.remote === found.remote)!;
+      const mod = this.modsRegistry.find(m => sameRemote(m.remote, found.remote))!;
       const existing = this.config.findInstalledModByRemote(found.remote);
 
       if (existing) {

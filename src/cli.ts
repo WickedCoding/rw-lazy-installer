@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import chalk from 'chalk';
 import { program } from 'commander';
 import { readFile } from 'fs/promises';
 import { fileURLToPath } from 'url';
@@ -20,9 +21,10 @@ const packageJson = JSON.parse(
 const version = packageJson.version;
 
 // Load mods registry
-const modsRegistry: Mod[] = JSON.parse(
+// mods.json has no ids; the folder name is the stable identifier
+const modsRegistry: Mod[] = (JSON.parse(
   await readFile(path.join(__dirname, '../mods.json'), 'utf-8')
-);
+) as Mod[]).map(mod => ({ ...mod, id: mod.id ?? mod.name }));
 
 // Initialize services
 const config = new ConfigManager('rimworld-lazy-installer');
@@ -137,5 +139,10 @@ program
     }, modsRegistry);
   });
 
-// Parse arguments
-program.parse();
+// Parse arguments; commands report their own details and throw to signal failure
+try {
+  await program.parseAsync();
+} catch (error) {
+  console.error(chalk.red(`\n${(error as Error).message}`));
+  process.exitCode = 1;
+}

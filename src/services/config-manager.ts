@@ -1,6 +1,7 @@
 import Conf from 'conf';
 import type { AppConfig, UserPreferences } from '../types/config';
 import type { ModInstallation } from '../types/mod';
+import { sameRemote } from '../utils/remote.js';
 
 /**
  * Configuration field names - maintaining backward compatibility
@@ -62,7 +63,9 @@ export class ConfigManager {
    */
   addOrUpdateInstalledMod(mod: ModInstallation): void {
     const installed = this.getInstalledMods();
-    const index = installed.findIndex(m => m.modId === mod.modId || m.remote === mod.remote);
+    const index = installed.findIndex(m =>
+      (mod.modId !== undefined && m.modId === mod.modId) || sameRemote(m.remote, mod.remote)
+    );
 
     if (index >= 0) {
       installed[index] = mod;
@@ -86,10 +89,7 @@ export class ConfigManager {
    * Find an installed mod by its remote URL
    */
   findInstalledModByRemote(remote: string): ModInstallation | undefined {
-    const normalizedRemote = remote.replace(/\.git$/, '');
-    return this.getInstalledMods().find(
-      m => m.remote.replace(/\.git$/, '') === normalizedRemote
-    );
+    return this.getInstalledMods().find(m => sameRemote(m.remote, remote));
   }
 
   /**

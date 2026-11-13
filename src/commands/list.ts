@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import { ConfigManager } from '../services/config-manager.js';
 import type { CommandOptions } from '../types/command.js';
 import type { Mod } from '../types/mod.js';
+import { findRegistryMod } from '../utils/remote.js';
 
 interface ListCommandOptions extends CommandOptions {
   /** Show installed mods (default: true) */
@@ -35,7 +36,7 @@ export async function listCommand(
 
     if (installedMods.length > 0) {
       installedMods.forEach(installed => {
-        const mod = modsRegistry.find(m => m.remote === installed.remote);
+        const mod = findRegistryMod(modsRegistry, installed.remote);
 
         if (!mod) {
           // Mod not in registry anymore (missing)
@@ -76,9 +77,8 @@ export async function listCommand(
   if (showNew) {
     console.log(chalk.green`\nInstallable mods:\n`);
 
-    const installedRemotes = installedMods.map(m => m.remote.replace('.git', ''));
     let availableMods = modsRegistry.filter(mod =>
-      !installedRemotes.includes(mod.remote.replace('.git', ''))
+      !installedMods.some(installed => findRegistryMod([mod], installed.remote))
     );
 
     // Apply version filter if specified
