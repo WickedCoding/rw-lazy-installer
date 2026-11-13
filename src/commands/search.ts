@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import { ConfigManager } from '../services/config-manager.js';
 import type { CommandOptions } from '../types/command.js';
 import type { Mod } from '../types/mod.js';
+import { findRegistryMod } from '../utils/remote.js';
 
 interface SearchCommandOptions extends CommandOptions {
   /** Show installed mods (default: true) */
@@ -31,7 +32,7 @@ export async function searchCommand(
 
   // Filter installed mods by search term
   const matchingInstalled = installedMods.filter(installed => {
-    const mod = modsRegistry.find(m => m.remote === installed.remote);
+    const mod = findRegistryMod(modsRegistry, installed.remote);
     return installed.name.toLowerCase().includes(searchLower) ||
            installed.modId.toLowerCase().includes(searchLower) ||
            (mod && (
@@ -52,7 +53,7 @@ export async function searchCommand(
 
     if (matchingInstalled.length > 0) {
       matchingInstalled.forEach(installed => {
-        const mod = modsRegistry.find(m => m.remote === installed.remote);
+        const mod = findRegistryMod(modsRegistry, installed.remote);
 
         if (!mod) {
           // Mod not in registry anymore (missing)
@@ -93,9 +94,8 @@ export async function searchCommand(
   if (showNew) {
     console.log(chalk.green`\nInstallable mods:\n`);
 
-    const installedRemotes = installedMods.map(m => m.remote.replace('.git', ''));
     const availableMatchingMods = matchingMods.filter(mod =>
-      !installedRemotes.includes(mod.remote.replace('.git', ''))
+      !installedMods.some(installed => findRegistryMod([mod], installed.remote))
     );
 
     if (availableMatchingMods.length > 0) {
@@ -128,7 +128,7 @@ export async function searchCommand(
 
   // Show summary
   const totalMatches = (showInstalled ? matchingInstalled.length : 0) +
-                       (showNew ? matchingMods.filter(m => !installedMods.some(i => i.remote === m.remote)).length : 0);
+                       (showNew ? matchingMods.filter(m => !installedMods.some(i => findRegistryMod([m], i.remote))).length : 0);
 
   if (totalMatches > 0) {
     console.log(chalk.green`\n\n\ti.e.`, chalk.bold.white`$ rw-lazy-installer install ${matchingMods[0]?.name || 'mod-name'}\n`);
